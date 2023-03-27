@@ -586,7 +586,12 @@ func sendPicModeCheckCard(ctx context.Context,
 	)
 }
 
-func sendNewTopicCard(ctx context.Context,
+func sendNewTopicCard(ctx context.Context, sessionId *string, msgId *string, content string) {
+    newContent := fmt.Sprintf("%s\n\n👻️ 已开启新的话题\n提醒：点击对话框参与回复，可保持话题连贯", content)
+    replyMsg(ctx, newContent, msgId)
+}
+
+func sendNewTopicCardOrig(ctx context.Context,
 	sessionId *string, msgId *string, content string) {
 	newCard, _ := newSendCard(
 		withHeader("👻️ 已开启新的话题", larkcard.TemplateBlue),
