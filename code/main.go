@@ -2,29 +2,23 @@ package main
 
 import (
 	"context"
-	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
-	"log"
 	"start-feishubot/handlers"
 	"start-feishubot/initialization"
-	"start-feishubot/services/openai"
-
-	larkcard "github.com/larksuite/oapi-sdk-go/v3/card"
+	"start-feishubot/logger"
 
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/pflag"
-
 	sdkginext "github.com/larksuite/oapi-sdk-gin"
-
+	larkcard "github.com/larksuite/oapi-sdk-go/v3/card"
 	"github.com/larksuite/oapi-sdk-go/v3/event/dispatcher"
-)
-
-var (
-	cfg = pflag.StringP("config", "c", "./config.yaml", "apiserver config file path.")
+	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
+	"github.com/spf13/pflag"
+	"start-feishubot/services/openai"
 )
 
 func main() {
+	initialization.InitRoleList()
 	pflag.Parse()
-	config := initialization.LoadConfig(*cfg)
+	config := initialization.GetConfig()
 	initialization.LoadLarkClient(*config)
 	gpt := openai.NewChatGPT(*config)
 	handlers.InitHandlers(gpt, *config)
@@ -33,6 +27,7 @@ func main() {
 		config.FeishuAppVerificationToken, config.FeishuAppEncryptKey).
 		OnP2MessageReceiveV1(handlers.Handler).
 		OnP2MessageReadV1(func(ctx context.Context, event *larkim.P2MessageReadV1) error {
+			logger.Debugf("收到请求 %v", event.RequestURI)
 			return handlers.ReadHandler(ctx, event)
 		})
 
@@ -52,9 +47,7 @@ func main() {
 		sdkginext.NewCardActionHandlerFunc(
 			cardHandler))
 
-	err := initialization.StartServer(*config, r)
-	if err != nil {
-		log.Fatalf("failed to start server: %v", err)
+	if err := initialization.StartServer(*config, r); err != nil {
+		logger.Fatalf("failed to start server: %v", err)
 	}
-
 }
